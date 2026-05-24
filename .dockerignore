@@ -1,0 +1,19 @@
+# Não enviar dados sensíveis ao contexto de build
+.env
+.env.*
+!.env.example
+
+# Controle de versão
+.git
+.gitignore
+
+# Dependências de desenvolvimento (Node, Python, etc.)
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+
+# Logs e temporários
+*.log
+*.tmp
+.DS_Store

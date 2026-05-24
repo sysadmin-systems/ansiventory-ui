@@ -1,0 +1,163 @@
+# ==============================================================================
+# Ansiventory UI — Docker Compose
+# PostgreSQL 18.4 | Ambiente de desenvolvimento e produção
+# ==============================================================================
+# Uso:
+#   cp .env.example .env && docker compose up -d
+#
+# Variáveis obrigatórias no .env:
+#   POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
+# ==============================================================================
+
+services:
+
+  # ----------------------------------------------------------------------------
+  # Banco de dados principal — PostgreSQL 18
+  # Nota: no PG18+ o PGDATA padrão é /var/lib/postgresql/18/docker
+  #       e o VOLUME raiz passou a ser /var/lib/postgresql (sem subpasta)
+  # ----------------------------------------------------------------------------
+  db:
+    image: postgres:18.4-bookworm
+    container_name: ansiventory_db
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB}
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA:            /var/lib/postgresql/18/docker
+
+    ports:
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
+
+    volumes:
+      # Dados persistentes — aponta para a raiz conforme mudança do PG18
+      - postgres_data:/var/lib/postgresql
+
+      # Scripts de inicialização (executados uma única vez na criação do banco)
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+
+      # Configuração personalizada (opcional)
+      - ./docker/postgres/conf/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout:  5s
+      retries:  5
+      start_period: 30s
+
+    networks:
+      - backend
+
+    # Limites de recursos (ajuste conforme o host)
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ----------------------------------------------------------------------------
+  # pgAdmin 4 — Interface web para administração do PostgreSQL
+  # Acesse: http://localhost:${PGADMIN_HOST_PORT:-5050}
+  # Ative com: docker compose --profile pgadmin up -d
+  # ----------------------------------------------------------------------------
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: ansiventory_pgadmin
+    restart: unless-stopped
+    profiles:
+      - pgadmin
+
+    environment:
+      PGADMIN_DEFAULT_EMAIL:    ${PGADMIN_EMAIL:-admin@ansiventory.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+
+    ports:
+      - "${PGADMIN_HOST_PORT:-5050}:80"
+
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    networks:
+      - backend
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # ----------------------------------------------------------------------------
+  # CloudBeaver — Interface web multi-banco (baseada no DBeaver desktop)
+  # Acesse: http://localhost:${CLOUDBEAVER_HOST_PORT:-8978}
+  # Ative com: docker compose --profile cloudbeaver up -d
+  # Na primeira execução: wizard de configuração inicial no browser
+  # ----------------------------------------------------------------------------
+  cloudbeaver:
+    image: dbeaver/cloudbeaver:latest
+    container_name: ansiventory_cloudbeaver
+    restart: unless-stopped
+    profiles:
+      - cloudbeaver
+
+    ports:
+      - "${CLOUDBEAVER_HOST_PORT:-8978}:8978"
+
+    volumes:
+      - cloudbeaver_data:/opt/cloudbeaver/workspace
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    networks:
+      - backend
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+# ==============================================================================
+# Volumes
+# ==============================================================================
+volumes:
+  postgres_data:
+    driver: local
+    labels:
+      com.ansiventory.description: "Dados persistentes do PostgreSQL 18"
+
+  pgadmin_data:
+    driver: local
+    labels:
+      com.ansiventory.description: "Dados persistentes do pgAdmin"
+
+  cloudbeaver_data:
+    driver: local
+    labels:
+      com.ansiventory.description: "Dados persistentes do CloudBeaver"
+
+# ==============================================================================
+# Redes
+# ==============================================================================
+networks:
+  backend:
+    driver: bridge
+    name: ansiventory_backend
+    labels:
+      com.ansiventory.description: "Rede interna dos serviços de backend"
