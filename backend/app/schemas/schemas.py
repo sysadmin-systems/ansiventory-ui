@@ -44,7 +44,7 @@ class GrupoOut(BaseModel):
 # ------------------------------------------------------------------
 class HostCreate(BaseModel):
     hostname: str
-    ip_address: str
+    ip_address: Optional[str]
     municipio: Optional[str] = None
     ambiente: Optional[str] = None
     ativo: bool = True
@@ -68,7 +68,7 @@ class HostOut(BaseModel):
     id: int
     workspace_id: int
     hostname: str
-    ip_address: str
+    ip_address: Optional[str]
     municipio: Optional[str]
     ambiente: Optional[str]
     ativo: bool

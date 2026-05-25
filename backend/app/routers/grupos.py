@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.auth import verify_token
 from app.models.models import Grupo
 from app.schemas.schemas import GrupoCreate, GrupoOut, GrupoUpdate
 
@@ -41,7 +42,8 @@ async def create_grupo(workspace_id: int, payload: GrupoCreate, db: AsyncSession
 
 @router.patch("/{grupo_id}", response_model=GrupoOut)
 async def update_grupo(
-    workspace_id: int, grupo_id: int, payload: GrupoUpdate, db: AsyncSession = Depends(get_db)
+    workspace_id: int, grupo_id: int, payload: GrupoUpdate, db: AsyncSession = Depends(get_db),
+    _token: dict = Depends(verify_token),
 ):
     result = await db.execute(
         select(Grupo).where(Grupo.id == grupo_id, Grupo.workspace_id == workspace_id)

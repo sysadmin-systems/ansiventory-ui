@@ -5,7 +5,7 @@ from sqlalchemy import (
     Boolean, DateTime, ForeignKey, Index, Integer,
     String, Text, UniqueConstraint, func,
 )
-from sqlalchemy.dialects.postgresql import INET, JSONB
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -50,7 +50,7 @@ class Host(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     workspace_id: Mapped[int] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
     hostname: Mapped[str] = mapped_column(Text, nullable=False)
-    ip_address: Mapped[str] = mapped_column(INET, nullable=False)
+    ip_address: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     municipio: Mapped[Optional[str]] = mapped_column(Text)
     ambiente: Mapped[Optional[str]] = mapped_column(String(20))
     ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")

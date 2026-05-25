@@ -2,10 +2,12 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, delete, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
+from app.auth import verify_token
 from app.models.models import Host, HostGrupo, Grupo, AuditLog
 from app.schemas.schemas import HostCreate, HostOut, HostUpdate, HostVarsOut, AuditLogOut
 
@@ -14,9 +16,20 @@ router = APIRouter(prefix="/workspaces/{workspace_id}/hosts", tags=["hosts"])
 
 def _host_to_out(host: Host) -> HostOut:
     grupos = [hg.grupo.nome for hg in host.host_grupos if hg.grupo]
-    data = HostOut.model_validate(host)
-    data.grupos = grupos
-    return data
+    # converte IPv4Address -> str antes de validar
+    host_dict = {
+        "id": host.id,
+        "workspace_id": host.workspace_id,
+        "hostname": host.hostname,
+        "ip_address": str(host.ip_address),
+        "municipio": host.municipio,
+        "ambiente": host.ambiente,
+        "ativo": host.ativo,
+        "vars": host.vars,
+        "updated_at": host.updated_at,
+        "grupos": grupos,
+    }
+    return HostOut.model_validate(host_dict)
 
 
 @router.get("", response_model=list[HostOut])
@@ -27,6 +40,7 @@ async def list_hosts(
     municipio: Optional[str] = Query(None),
     grupo: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
+    _token: dict = Depends(verify_token),
 ):
     q = (
         select(Host)
@@ -89,7 +103,11 @@ async def create_host(workspace_id: int, payload: HostCreate, db: AsyncSession =
         vars=payload.vars,
     )
     db.add(host)
-    await db.flush()
+    try:
+        await db.flush()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail=f"Host '{payload.hostname}' já existe neste workspace")
 
     for grupo_id in payload.grupo_ids:
         db.add(HostGrupo(host_id=host.id, grupo_id=grupo_id))
@@ -115,7 +133,8 @@ async def create_host(workspace_id: int, payload: HostCreate, db: AsyncSession =
 
 @router.patch("/{host_id}", response_model=HostOut)
 async def update_host(
-    workspace_id: int, host_id: int, payload: HostUpdate, db: AsyncSession = Depends(get_db)
+    workspace_id: int, host_id: int, payload: HostUpdate, db: AsyncSession = Depends(get_db),
+    _token: dict = Depends(verify_token),
 ):
     result = await db.execute(
         select(Host)
