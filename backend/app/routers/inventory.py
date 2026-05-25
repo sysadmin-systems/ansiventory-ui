@@ -4,7 +4,7 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.auth import verify_token
+from app.auth import require_session
 from app.models.models import Workspace, Host, Grupo, HostGrupo
 from app.schemas.schemas import WorkspaceOut
 
@@ -12,15 +12,13 @@ router = APIRouter(tags=["inventory"])
 
 
 @router.get("/workspaces", response_model=list[WorkspaceOut])
-async def list_workspaces(db: AsyncSession = Depends(get_db),_token: dict = Depends(verify_token),):
+async def list_workspaces(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Workspace).order_by(Workspace.name))
     return result.scalars().all()
 
 
-
 @router.get("/inventory/{workspace_slug}")
-async def get_inventory( workspace_slug: str,db: AsyncSession = Depends(get_db),
-    _token: dict = Depends(verify_token),):
+async def get_inventory(workspace_slug: str, db: AsyncSession = Depends(get_db)):
     """
     Retorna o inventário Ansible completo no formato JSON esperado pelo plugin.
 

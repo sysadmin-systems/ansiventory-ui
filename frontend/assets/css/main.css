@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { @apply bg-bg-0 text-text-1; }
+  body { @apply font-sans antialiased; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-border rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-border-2; }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center gap-1.5 px-3 h-8 rounded text-sm
+           bg-bg-2 text-text-1 border border-border-2
+           hover:bg-bg-3 active:scale-[0.98] transition-all duration-100
+           cursor-pointer select-none;
+  }
+  .btn-primary { @apply bg-blue-bg text-blue-text border-blue hover:brightness-110; }
+  .btn-success { @apply bg-green-bg text-green-text border-green hover:brightness-110; }
+  .btn-danger  { @apply bg-red-bg text-red-text border-red hover:brightness-110; }
+  .btn-ghost   { @apply bg-transparent border-transparent text-text-2 hover:bg-bg-2 hover:text-text-1; }
+
+  .input {
+    @apply w-full h-9 px-3 rounded bg-bg-2 border border-border
+           text-text-1 text-sm font-mono placeholder-text-3
+           focus:outline-none focus:border-blue transition-colors;
+  }
+
+  .badge { @apply inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full; }
+  .badge-azure    { @apply bg-blue-bg text-blue-text; }
+  .badge-onprem   { @apply bg-green-bg text-green-text; }
+  .badge-do       { @apply bg-purple-bg text-purple-text; }
+  .badge-inactive { @apply bg-bg-3 text-text-3; }
+
+  .tag { @apply inline-flex items-center text-[10px] px-2 py-0.5 rounded-full bg-bg-3 text-text-3 border border-border; }
+
+  .vault-badge {
+    @apply inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full
+           bg-amber-bg text-amber-text border border-amber cursor-pointer hover:brightness-110 transition-all;
+  }
+
+  .card      { @apply bg-bg-1 border border-border rounded-lg; }
+  .stat-card { @apply bg-bg-2 border border-border rounded-lg p-3; }
+}

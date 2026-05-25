@@ -1,16 +1,15 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import hosts, grupos, inventory
+from app.auth import LoginRequest, login, logout, require_session
+from app.routers import grupos, hosts, inventory
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # startup
     yield
-    # shutdown
 
 
 app = FastAPI(
@@ -22,12 +21,27 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # restringir em produção
-    allow_credentials=True,
+    allow_origins=["http://localhost:3000", "http://localhost:3001"],  # frontend Nuxt3
+    allow_credentials=True,                   # necessário para cookies
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# ------------------------------------------------------------------
+# Auth — público (sem cookie)
+# ------------------------------------------------------------------
+app.post("/auth/login", tags=["auth"])(login)
+app.post("/auth/logout", tags=["auth"])(logout)
+
+
+@app.get("/auth/me", tags=["auth"])
+async def me(session: dict = Depends(require_session)):
+    return session
+
+
+# ------------------------------------------------------------------
+# Routers protegidos
+# ------------------------------------------------------------------
 app.include_router(inventory.router)
 app.include_router(hosts.router)
 app.include_router(grupos.router)

@@ -1,0 +1,9 @@
+{
+  "_hash": "GXHm811GghBqPALfdqXjQUdVzjjK7HQNYV_2CRLAuUc",
+  "project": {
+    "rootDir": "/home/sysadmin/dev/ansiventory-ui/frontend"
+  },
+  "versions": {
+    "nuxt": "3.21.6"
+  }
+}

@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
-from app.auth import verify_token
+from app.auth import require_session
 from app.models.models import Host, HostGrupo, Grupo, AuditLog
 from app.schemas.schemas import HostCreate, HostOut, HostUpdate, HostVarsOut, AuditLogOut
 
@@ -40,7 +40,7 @@ async def list_hosts(
     municipio: Optional[str] = Query(None),
     grupo: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
-    _token: dict = Depends(verify_token),
+    _session: dict = Depends(require_session),
 ):
     q = (
         select(Host)
@@ -134,7 +134,7 @@ async def create_host(workspace_id: int, payload: HostCreate, db: AsyncSession =
 @router.patch("/{host_id}", response_model=HostOut)
 async def update_host(
     workspace_id: int, host_id: int, payload: HostUpdate, db: AsyncSession = Depends(get_db),
-    _token: dict = Depends(verify_token),
+    _session: dict = Depends(require_session),
 ):
     result = await db.execute(
         select(Host)
