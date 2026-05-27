@@ -47,8 +47,9 @@ services:
       retries:  5
       start_period: 30s
 
-    networks:
-      - backend
+    network_mode: host
+    # networks:
+    #   - backend
 
     # Limites de recursos (ajuste conforme o host)
     deploy:
@@ -123,6 +124,7 @@ services:
     ports:
       - "${BACKEND_HOST_PORT:-8000}:8000"
 
+
     volumes:
       - ./backend:/app
 
@@ -130,8 +132,8 @@ services:
       db:
         condition: service_healthy
 
-    networks:
-      - backend
+    network_mode: host
+      # - backend
 
     logging:
       driver: "json-file"

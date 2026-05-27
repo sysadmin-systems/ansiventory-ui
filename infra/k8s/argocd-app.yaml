@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ansiventory
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/sysadmin-systems/ansiventory-ui
+    targetRevision: master
+    path: infra/k8s
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ansiventory
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

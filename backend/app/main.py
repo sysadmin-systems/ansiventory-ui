@@ -4,7 +4,7 @@ from fastapi import Depends, FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.auth import LoginRequest, login, logout, require_session
-from app.routers import grupos, hosts, inventory
+from app.routers import grupos, hosts, inventory, vault, tokens
 
 
 @asynccontextmanager
@@ -45,6 +45,8 @@ async def me(session: dict = Depends(require_session)):
 app.include_router(inventory.router)
 app.include_router(hosts.router)
 app.include_router(grupos.router)
+app.include_router(vault.router)
+app.include_router(tokens.router)
 
 
 @app.get("/health")

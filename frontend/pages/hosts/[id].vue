@@ -19,7 +19,7 @@
 
       <div class="flex-1" />
       <button class="btn text-xs" @click="showEditHost = true"><i class="ti ti-edit" /> editar</button>
-      <button class="btn btn-danger text-xs"><i class="ti ti-trash" /></button>
+      <button class="btn btn-danger text-xs" @click="confirmDelete = true"><i class="ti ti-trash" /></button>
     </header>
 
     <!-- meta info -->
@@ -105,6 +105,34 @@
 
     </div>
   </div>
+
+  <!-- modal confirmação delete -->
+  <div v-if="confirmDelete && host" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.6)">
+    <div class="bg-bg-1 border border-border rounded-xl w-full max-w-sm">
+      <div class="p-5">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-9 h-9 rounded-lg bg-red-bg border border-red flex items-center justify-center flex-shrink-0">
+            <i class="ti ti-trash text-red-text" />
+          </div>
+          <div>
+            <div class="text-sm font-semibold text-text-1">excluir host</div>
+            <div class="text-xs text-text-2 mt-0.5">esta ação não pode ser desfeita</div>
+          </div>
+        </div>
+        <p class="text-xs text-text-2">
+          Tem certeza que deseja excluir
+          <span class="font-mono text-text-1">{{ host.hostname }}</span>?
+          Todas as vars e histórico de auditoria serão removidos.
+        </p>
+      </div>
+      <div class="flex justify-end gap-2 px-5 py-4 border-t border-border">
+        <button class="btn text-xs" @click="confirmDelete = false">cancelar</button>
+        <button class="btn btn-danger text-xs" @click="deleteHost">
+          <i class="ti ti-trash text-xs" /> excluir
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -127,6 +155,7 @@ const tabs = [
 
 const showEditHost = ref(false)
 const showAddVar = ref(false)
+const confirmDelete = ref(false)
 
 const { data: grupos } = useAsyncData(
   'grupos',
@@ -208,5 +237,11 @@ async function onVarRemove(key: string) {
 function onSaved() {
   refreshHost()
   refreshVars()
+}
+
+async function deleteHost() {
+  if (!host.value) return
+  await del(`/workspaces/${auth.workspaceId}/hosts/${host.value.id}`)
+  await navigateTo('/hosts')
 }
 </script>
