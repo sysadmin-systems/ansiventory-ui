@@ -1,92 +1,122 @@
 <template>
   <div class="flex flex-col h-screen">
-    <header class="h-12 bg-bg-1 border-b border-border flex items-center px-4 flex-shrink-0">
-      <span class="text-sm font-semibold text-text-1">vault tool</span>
-      <span class="text-xs text-text-2 ml-3">criptografe e descriptografe variáveis ansible-vault</span>
+
+    <header class="h-14 bg-bg-1 border-b border-border flex items-center px-6 gap-4 flex-shrink-0">
+      <div class="w-8 h-8 rounded-lg bg-amber/10 border border-amber/20 flex items-center justify-center flex-shrink-0">
+        <i class="ti ti-lock text-amber-text text-sm" />
+      </div>
+      <div>
+        <h1 class="text-sm font-semibold text-text-1 leading-none">Vault Tool</h1>
+        <p class="text-[11px] text-text-3 mt-0.5">Criptografe e descriptografe variáveis Ansible Vault</p>
+      </div>
     </header>
 
-    <div class="flex-1 overflow-y-auto p-4">
-      <div class="grid grid-cols-2 gap-4 max-w-4xl">
+    <div class="flex-1 overflow-y-auto p-6">
+      <div class="grid grid-cols-2 gap-6 max-w-4xl">
 
-        <!-- criptografar -->
-        <div class="card p-4">
-          <div class="flex items-center gap-2.5 mb-4">
-            <div class="w-7 h-7 rounded-lg bg-amber-bg border border-amber flex items-center justify-center">
+        <!-- encrypt -->
+        <div class="glass-card overflow-hidden">
+          <div class="px-5 py-4 border-b border-border flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-amber/10 border border-amber/20 flex items-center justify-center flex-shrink-0">
               <i class="ti ti-lock text-amber-text text-sm" />
             </div>
-            <span class="text-sm font-semibold text-text-1">criptografar</span>
-          </div>
-
-          <label class="text-[11px] text-text-2 block mb-1.5 font-medium">valor em plaintext</label>
-          <textarea v-model="enc.input" placeholder="minha_senha_secreta" class="input font-mono text-xs resize-y min-h-[80px]" />
-
-          <div class="grid grid-cols-2 gap-2 mt-3">
             <div>
-              <label class="text-[11px] text-text-2 block mb-1.5 font-medium">vault id</label>
-              <input v-model="enc.vaultId" type="text" placeholder="default" class="input text-xs font-mono h-8" />
+              <div class="text-sm font-semibold text-text-1">Criptografar</div>
+              <div class="text-[11px] text-text-3">Plaintext → Ansible Vault</div>
             </div>
+          </div>
+          <div class="p-5 flex flex-col gap-4">
             <div>
-              <label class="text-[11px] text-text-2 block mb-1.5 font-medium">vault password</label>
-              <div class="relative">
-                <input v-model="enc.password" :type="showEncPassword ? 'text' : 'password'" placeholder="••••••••" class="input text-xs h-8 pr-8" />
-                <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-text-3 hover:text-text-2" @click="showEncPassword = !showEncPassword">
-                  <i :class="`ti ${showEncPassword ? 'ti-eye-off' : 'ti-eye'} text-xs`" />
-                </button>
+              <label class="text-xs font-semibold text-text-2 block mb-2 uppercase tracking-wide">Valor em plaintext</label>
+              <textarea v-model="enc.input" placeholder="minha_senha_secreta" class="input font-mono text-sm resize-y min-h-[80px]" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-xs font-semibold text-text-2 block mb-2 uppercase tracking-wide">Vault ID</label>
+                <input v-model="enc.vaultId" type="text" placeholder="default" class="input font-mono text-sm" />
+              </div>
+              <div>
+                <label class="text-xs font-semibold text-text-2 block mb-2 uppercase tracking-wide">Senha</label>
+                <div class="relative">
+                  <input v-model="enc.password" :type="showEncPassword ? 'text' : 'password'" placeholder="••••••••" class="input text-sm pr-9" />
+                  <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-text-3 hover:text-text-2 transition-colors" @click="showEncPassword = !showEncPassword">
+                    <i :class="`ti ${showEncPassword ? 'ti-eye-off' : 'ti-eye'} text-sm`" />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <button class="btn btn-primary w-full justify-center mt-3" :disabled="!enc.input.trim() || !enc.password.trim()" @click="encrypt">
-            <i class="ti ti-lock" /> criptografar
-          </button>
-
-          <div v-if="enc.error" class="mt-3 text-xs text-red-text bg-red-bg border border-red rounded-lg px-3 py-2">
-            {{ enc.error }}
-          </div>
-
-          <div v-if="enc.output" class="mt-3">
-            <div class="bg-bg-0 border border-border rounded-lg p-3 font-mono text-[10px] text-text-2 break-all leading-relaxed min-h-[60px]">{{ enc.output }}</div>
-            <button class="btn w-full justify-center mt-2 text-xs" @click="copy(enc.output, 'enc')">
-              <i class="ti ti-copy text-xs" /> {{ copied === 'enc' ? 'copiado!' : 'copiar resultado' }}
+            <button
+              class="btn btn-primary w-full justify-center gap-2"
+              :disabled="!enc.input.trim() || !enc.password.trim()"
+              @click="encrypt"
+            >
+              <i class="ti ti-lock text-sm" /> Criptografar
             </button>
-          </div>
-        </div>
 
-        <!-- descriptografar -->
-        <div class="card p-4">
-          <div class="flex items-center gap-2.5 mb-4">
-            <div class="w-7 h-7 rounded-lg bg-green-bg border border-green flex items-center justify-center">
-              <i class="ti ti-lock-open text-green-text text-sm" />
+            <div v-if="enc.error" class="flex items-start gap-2.5 text-xs text-red-text bg-red/10 border border-red/30 rounded-lg px-4 py-3">
+              <i class="ti ti-alert-circle text-base flex-shrink-0 mt-0.5" /> {{ enc.error }}
             </div>
-            <span class="text-sm font-semibold text-text-1">descriptografar</span>
-          </div>
 
-          <label class="text-[11px] text-text-2 block mb-1.5 font-medium">valor vault</label>
-          <textarea v-model="dec.input" placeholder="$ANSIBLE_VAULT;1.1;AES256&#10;3836313631363364..." class="input font-mono text-[10px] resize-y min-h-[80px]" />
-
-          <div class="mt-3">
-            <label class="text-[11px] text-text-2 block mb-1.5 font-medium">vault password</label>
-            <div class="relative">
-              <input v-model="dec.password" :type="showDecPassword ? 'text' : 'password'" placeholder="••••••••" class="input text-xs h-8 pr-8" />
-              <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-text-3 hover:text-text-2" @click="showDecPassword = !showDecPassword">
-                <i :class="`ti ${showDecPassword ? 'ti-eye-off' : 'ti-eye'} text-xs`" />
+            <div v-if="enc.output">
+              <label class="text-xs font-semibold text-text-2 block mb-2 uppercase tracking-wide">Resultado</label>
+              <div class="bg-bg-0 border border-border rounded-lg p-3 font-mono text-[11px] text-amber-text break-all leading-relaxed min-h-[60px]">{{ enc.output }}</div>
+              <button class="btn w-full justify-center mt-2 gap-2 text-sm" @click="copy(enc.output, 'enc')">
+                <i class="ti ti-copy text-sm" />
+                {{ copied === 'enc' ? 'Copiado!' : 'Copiar resultado' }}
               </button>
             </div>
           </div>
+        </div>
 
-          <button class="btn btn-success w-full justify-center mt-3" :disabled="!dec.input.trim() || !dec.password.trim()" @click="decrypt">
-            <i class="ti ti-lock-open" /> descriptografar
-          </button>
-
-          <div v-if="dec.error" class="mt-3 text-xs text-red-text bg-red-bg border border-red rounded-lg px-3 py-2">
-            {{ dec.error }}
+        <!-- decrypt -->
+        <div class="glass-card overflow-hidden">
+          <div class="px-5 py-4 border-b border-border flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-green/10 border border-green/20 flex items-center justify-center flex-shrink-0">
+              <i class="ti ti-lock-open text-green-text text-sm" />
+            </div>
+            <div>
+              <div class="text-sm font-semibold text-text-1">Descriptografar</div>
+              <div class="text-[11px] text-text-3">Ansible Vault → Plaintext</div>
+            </div>
           </div>
+          <div class="p-5 flex flex-col gap-4">
+            <div>
+              <label class="text-xs font-semibold text-text-2 block mb-2 uppercase tracking-wide">Valor vault</label>
+              <textarea v-model="dec.input" placeholder="$ANSIBLE_VAULT;1.1;AES256&#10;3836313631363364..." class="input font-mono text-[11px] resize-y min-h-[80px]" />
+            </div>
 
-          <div v-if="dec.output !== null" class="mt-3">
-            <div class="bg-bg-0 border border-border rounded-lg p-3 font-mono text-xs text-green-text break-all leading-relaxed min-h-[60px]">{{ dec.output }}</div>
-            <button class="btn w-full justify-center mt-2 text-xs" @click="copy(dec.output!, 'dec')">
-              <i class="ti ti-copy text-xs" /> {{ copied === 'dec' ? 'copiado!' : 'copiar resultado' }}
+            <div>
+              <label class="text-xs font-semibold text-text-2 block mb-2 uppercase tracking-wide">Senha</label>
+              <div class="relative">
+                <input v-model="dec.password" :type="showDecPassword ? 'text' : 'password'" placeholder="••••••••" class="input text-sm pr-9" />
+                <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-text-3 hover:text-text-2 transition-colors" @click="showDecPassword = !showDecPassword">
+                  <i :class="`ti ${showDecPassword ? 'ti-eye-off' : 'ti-eye'} text-sm`" />
+                </button>
+              </div>
+            </div>
+
+            <button
+              class="btn btn-success w-full justify-center gap-2"
+              :disabled="!dec.input.trim() || !dec.password.trim()"
+              @click="decrypt"
+            >
+              <i class="ti ti-lock-open text-sm" /> Descriptografar
             </button>
+
+            <div v-if="dec.error" class="flex items-start gap-2.5 text-xs text-red-text bg-red/10 border border-red/30 rounded-lg px-4 py-3">
+              <i class="ti ti-alert-circle text-base flex-shrink-0 mt-0.5" /> {{ dec.error }}
+            </div>
+
+            <div v-if="dec.output !== null">
+              <label class="text-xs font-semibold text-text-2 block mb-2 uppercase tracking-wide">Resultado</label>
+              <div class="bg-bg-0 border border-green/20 rounded-lg p-3 font-mono text-sm text-green-text break-all leading-relaxed min-h-[60px]">{{ dec.output }}</div>
+              <button class="btn w-full justify-center mt-2 gap-2 text-sm" @click="copy(dec.output!, 'dec')">
+                <i class="ti ti-copy text-sm" />
+                {{ copied === 'dec' ? 'Copiado!' : 'Copiar resultado' }}
+              </button>
+            </div>
           </div>
         </div>
 
