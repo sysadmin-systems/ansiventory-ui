@@ -187,31 +187,27 @@ const ambienteFilters = [
   { value: 'digitalocean', label: 'DO' },
 ]
 
-const { data: grupos } = useAsyncData(
-  'grupos-list',
-  async () => {
-    if (!auth.workspaceId) return [] as Grupo[]
-    return get<Grupo[]>(`/workspaces/${auth.workspaceId}/grupos`)
-  },
-  { default: () => [] as Grupo[] }
-)
+const grupos = ref<Grupo[]>([])
+const hosts = ref<Host[]>([])
+const pending = ref(false)
 
-const { data: hosts, pending, refresh } = useAsyncData(
-  'hosts',
-  async () => {
-    if (!auth.workspaceId) return [] as Host[]
-    return get<Host[]>(`/workspaces/${auth.workspaceId}/hosts`)
-  },
-  { default: () => [] as Host[] }
-)
+async function refresh() {
+  if (!auth.workspaceId) return
+  pending.value = true
+  try {
+    const [h, g] = await Promise.all([
+      get<Host[]>(`/workspaces/${auth.workspaceId}/hosts`),
+      get<Grupo[]>(`/workspaces/${auth.workspaceId}/grupos`),
+    ])
+    hosts.value = h
+    grupos.value = g
+  } finally {
+    pending.value = false
+  }
+}
 
-watch(() => auth.workspaceId, (id) => {
-  if (id) refresh()
-}, { immediate: true })
-
-onMounted(() => {
-  if (auth.workspaceId) refresh()
-})
+onMounted(() => refresh())
+watch(() => auth.workspaceId, (id) => { if (id) refresh() })
 
 const filtered = computed(() => {
   let list = hosts.value ?? []

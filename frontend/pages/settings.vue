@@ -233,8 +233,8 @@ async function loadAll() {
   tokens.value = tks
 }
 
-onMounted(() => { if (auth.workspaceId) loadAll() })
-watch(() => auth.workspaceId, (id) => { if (id) loadAll() }, { immediate: true })
+onMounted(() => loadAll())
+watch(() => auth.workspaceId, (id) => { if (id) loadAll() })
 
 function formatDate(d: string) {
   return new Date(d).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })

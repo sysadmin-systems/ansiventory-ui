@@ -53,7 +53,7 @@
               <span v-else class="font-mono text-text-1 break-all">{{ entry.value }}</span>
             </td>
             <td v-if="!readonly" class="px-2 py-2 text-right align-top">
-              <div class="flex gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+              <div class="flex gap-1 justify-end transition-opacity" :class="confirmingRemoveKey === entry.key ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'">
                 <button
                   class="w-6 h-6 rounded flex items-center justify-center text-text-3 hover:text-text-1 hover:bg-bg-3 transition-colors"
                   title="editar"
@@ -61,13 +61,33 @@
                 >
                   <i class="ti ti-pencil text-xs" />
                 </button>
-                <button
-                  class="w-6 h-6 rounded flex items-center justify-center text-text-3 hover:text-red-text hover:bg-red-bg transition-colors"
-                  title="remover"
-                  @click="$emit('remove', entry.key)"
-                >
-                  <i class="ti ti-trash text-xs" />
-                </button>
+                <!-- estado normal: lixeira -->
+                <template v-if="confirmingRemoveKey !== entry.key">
+                  <button
+                    class="w-6 h-6 rounded flex items-center justify-center text-text-3 hover:text-red-text hover:bg-red-bg transition-colors"
+                    title="remover"
+                    @click="confirmingRemoveKey = entry.key"
+                  >
+                    <i class="ti ti-trash text-xs" />
+                  </button>
+                </template>
+                <!-- estado confirmação: confirmar/cancelar -->
+                <template v-else>
+                  <button
+                    class="w-6 h-6 rounded flex items-center justify-center text-green-text hover:bg-green-bg transition-colors"
+                    title="confirmar exclusão"
+                    @click="$emit('remove', entry.key); confirmingRemoveKey = null"
+                  >
+                    <i class="ti ti-check text-xs" />
+                  </button>
+                  <button
+                    class="w-6 h-6 rounded flex items-center justify-center text-text-3 hover:text-text-1 hover:bg-bg-3 transition-colors"
+                    title="cancelar"
+                    @click="confirmingRemoveKey = null"
+                  >
+                    <i class="ti ti-x text-xs" />
+                  </button>
+                </template>
               </div>
             </td>
           </template>
@@ -96,6 +116,7 @@ const emit = defineEmits<{
 
 const editingKey = ref<string | null>(null)
 const editValue = ref('')
+const confirmingRemoveKey = ref<string | null>(null)
 
 function isVault(v: unknown): boolean {
   if (typeof v === 'object' && v !== null && '__ansible_vault' in v) return true
@@ -104,6 +125,7 @@ function isVault(v: unknown): boolean {
 }
 
 function startEdit(key: string, value: unknown) {
+  confirmingRemoveKey.value = null
   editingKey.value = key
   if (typeof value === 'object' && value !== null) {
     editValue.value = JSON.stringify(value, null, 2)

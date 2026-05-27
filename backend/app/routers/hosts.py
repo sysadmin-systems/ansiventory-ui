@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
-from app.auth import require_session
+from app.auth import require_workspace_access
 from app.models.models import Host, HostGrupo, Grupo, AuditLog
 from app.schemas.schemas import HostCreate, HostOut, HostUpdate, HostVarsOut, AuditLogOut
 
@@ -16,12 +16,11 @@ router = APIRouter(prefix="/workspaces/{workspace_id}/hosts", tags=["hosts"])
 
 def _host_to_out(host: Host) -> HostOut:
     grupos = [hg.grupo.nome for hg in host.host_grupos if hg.grupo]
-    # converte IPv4Address -> str antes de validar
     host_dict = {
         "id": host.id,
         "workspace_id": host.workspace_id,
         "hostname": host.hostname,
-        "ip_address": str(host.ip_address),
+        "ip_address": str(host.ip_address) if host.ip_address else None,
         "municipio": host.municipio,
         "ambiente": host.ambiente,
         "ativo": host.ativo,
@@ -40,7 +39,7 @@ async def list_hosts(
     municipio: Optional[str] = Query(None),
     grupo: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
-    _session: dict = Depends(require_session),
+    _session: dict = Depends(require_workspace_access),
 ):
     q = (
         select(Host)
@@ -63,7 +62,12 @@ async def list_hosts(
 
 
 @router.get("/{host_id}", response_model=HostOut)
-async def get_host(workspace_id: int, host_id: int, db: AsyncSession = Depends(get_db)):
+async def get_host(
+    workspace_id: int,
+    host_id: int,
+    db: AsyncSession = Depends(get_db),
+    _session: dict = Depends(require_workspace_access),
+):
     result = await db.execute(
         select(Host)
         .where(Host.id == host_id, Host.workspace_id == workspace_id)
@@ -76,8 +80,12 @@ async def get_host(workspace_id: int, host_id: int, db: AsyncSession = Depends(g
 
 
 @router.get("/{host_id}/vars", response_model=HostVarsOut)
-async def get_host_vars(workspace_id: int, host_id: int, db: AsyncSession = Depends(get_db)):
-    """Retorna as vars efetivas do host — merge de group_vars + host_vars."""
+async def get_host_vars(
+    workspace_id: int,
+    host_id: int,
+    db: AsyncSession = Depends(get_db),
+    _session: dict = Depends(require_workspace_access),
+):
     result = await db.execute(
         select(Host.hostname)
         .where(Host.id == host_id, Host.workspace_id == workspace_id)
@@ -92,7 +100,12 @@ async def get_host_vars(workspace_id: int, host_id: int, db: AsyncSession = Depe
 
 
 @router.post("", response_model=HostOut, status_code=201)
-async def create_host(workspace_id: int, payload: HostCreate, db: AsyncSession = Depends(get_db)):
+async def create_host(
+    workspace_id: int,
+    payload: HostCreate,
+    db: AsyncSession = Depends(get_db),
+    _session: dict = Depends(require_workspace_access),
+):
     host = Host(
         workspace_id=workspace_id,
         hostname=payload.hostname,
@@ -116,8 +129,8 @@ async def create_host(workspace_id: int, payload: HostCreate, db: AsyncSession =
         workspace_id=workspace_id,
         host_id=host.id,
         action="create",
-        diff={"hostname": host.hostname, "ip_address": str(host.ip_address)},
-        changed_by="api",
+        diff={"hostname": host.hostname, "ip_address": str(host.ip_address) if host.ip_address else None},
+        changed_by=str(_session.get("id", "api")),
     ))
 
     await db.commit()
@@ -133,8 +146,11 @@ async def create_host(workspace_id: int, payload: HostCreate, db: AsyncSession =
 
 @router.patch("/{host_id}", response_model=HostOut)
 async def update_host(
-    workspace_id: int, host_id: int, payload: HostUpdate, db: AsyncSession = Depends(get_db),
-    _session: dict = Depends(require_session),
+    workspace_id: int,
+    host_id: int,
+    payload: HostUpdate,
+    db: AsyncSession = Depends(get_db),
+    _session: dict = Depends(require_workspace_access),
 ):
     result = await db.execute(
         select(Host)
@@ -160,7 +176,7 @@ async def update_host(
         host_id=host_id,
         action="update",
         diff={"before": before, "after": update_data},
-        changed_by="api",
+        changed_by=str(_session.get("id", "api")),
     ))
 
     await db.commit()
@@ -173,7 +189,12 @@ async def update_host(
 
 
 @router.delete("/{host_id}", status_code=204)
-async def delete_host(workspace_id: int, host_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_host(
+    workspace_id: int,
+    host_id: int,
+    db: AsyncSession = Depends(get_db),
+    _session: dict = Depends(require_workspace_access),
+):
     result = await db.execute(
         select(Host).where(Host.id == host_id, Host.workspace_id == workspace_id)
     )
@@ -186,14 +207,19 @@ async def delete_host(workspace_id: int, host_id: int, db: AsyncSession = Depend
         host_id=host_id,
         action="delete",
         diff={"hostname": host.hostname},
-        changed_by="api",
+        changed_by=str(_session.get("id", "api")),
     ))
     await db.delete(host)
     await db.commit()
 
 
 @router.get("/{host_id}/audit", response_model=list[AuditLogOut])
-async def get_host_audit(workspace_id: int, host_id: int, db: AsyncSession = Depends(get_db)):
+async def get_host_audit(
+    workspace_id: int,
+    host_id: int,
+    db: AsyncSession = Depends(get_db),
+    _session: dict = Depends(require_workspace_access),
+):
     result = await db.execute(
         select(AuditLog)
         .where(AuditLog.host_id == host_id, AuditLog.workspace_id == workspace_id)

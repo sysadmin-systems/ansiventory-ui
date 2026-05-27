@@ -3,10 +3,10 @@ import secrets
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select, delete
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth import require_session
+from app.auth import require_workspace_access
 from app.database import get_db
 from app.models.models import ApiToken
 
@@ -28,7 +28,7 @@ class TokenOut(BaseModel):
 async def list_tokens(
     workspace_id: int,
     db: AsyncSession = Depends(get_db),
-    _session: dict = Depends(require_session),
+    _session: dict = Depends(require_workspace_access),
 ):
     result = await db.execute(
         select(ApiToken)
@@ -52,7 +52,7 @@ async def create_token(
     workspace_id: int,
     payload: TokenCreate,
     db: AsyncSession = Depends(get_db),
-    _session: dict = Depends(require_session),
+    _session: dict = Depends(require_workspace_access),
 ):
     raw_token = secrets.token_hex(32)
     token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
@@ -66,7 +66,6 @@ async def create_token(
     await db.commit()
     await db.refresh(token)
 
-    # retorna o token raw UMA VEZ — depois não é mais possível recuperar
     return {
         "id": token.id,
         "token": raw_token,
@@ -81,7 +80,7 @@ async def delete_token(
     workspace_id: int,
     token_id: int,
     db: AsyncSession = Depends(get_db),
-    _session: dict = Depends(require_session),
+    _session: dict = Depends(require_workspace_access),
 ):
     result = await db.execute(
         select(ApiToken).where(
@@ -93,7 +92,6 @@ async def delete_token(
     if not token:
         raise HTTPException(status_code=404, detail="Token não encontrado")
 
-    # protege contra exclusão do último token
     count_result = await db.execute(
         select(ApiToken).where(ApiToken.workspace_id == workspace_id)
     )

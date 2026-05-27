@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.auth import require_session
+from app.auth import require_workspace_access
 from app.models.models import Grupo
 from app.schemas.schemas import GrupoCreate, GrupoOut, GrupoUpdate
 
@@ -11,7 +11,11 @@ router = APIRouter(prefix="/workspaces/{workspace_id}/grupos", tags=["grupos"])
 
 
 @router.get("", response_model=list[GrupoOut])
-async def list_grupos(workspace_id: int, db: AsyncSession = Depends(get_db)):
+async def list_grupos(
+    workspace_id: int,
+    db: AsyncSession = Depends(get_db),
+    _session: dict = Depends(require_workspace_access),
+):
     result = await db.execute(
         select(Grupo)
         .where(Grupo.workspace_id == workspace_id)
@@ -21,7 +25,12 @@ async def list_grupos(workspace_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/{grupo_id}", response_model=GrupoOut)
-async def get_grupo(workspace_id: int, grupo_id: int, db: AsyncSession = Depends(get_db)):
+async def get_grupo(
+    workspace_id: int,
+    grupo_id: int,
+    db: AsyncSession = Depends(get_db),
+    _session: dict = Depends(require_workspace_access),
+):
     result = await db.execute(
         select(Grupo).where(Grupo.id == grupo_id, Grupo.workspace_id == workspace_id)
     )
@@ -32,7 +41,12 @@ async def get_grupo(workspace_id: int, grupo_id: int, db: AsyncSession = Depends
 
 
 @router.post("", response_model=GrupoOut, status_code=201)
-async def create_grupo(workspace_id: int, payload: GrupoCreate, db: AsyncSession = Depends(get_db)):
+async def create_grupo(
+    workspace_id: int,
+    payload: GrupoCreate,
+    db: AsyncSession = Depends(get_db),
+    _session: dict = Depends(require_workspace_access),
+):
     grupo = Grupo(workspace_id=workspace_id, nome=payload.nome, vars=payload.vars)
     db.add(grupo)
     await db.commit()
@@ -42,8 +56,11 @@ async def create_grupo(workspace_id: int, payload: GrupoCreate, db: AsyncSession
 
 @router.patch("/{grupo_id}", response_model=GrupoOut)
 async def update_grupo(
-    workspace_id: int, grupo_id: int, payload: GrupoUpdate, db: AsyncSession = Depends(get_db),
-    _session: dict = Depends(require_session),
+    workspace_id: int,
+    grupo_id: int,
+    payload: GrupoUpdate,
+    db: AsyncSession = Depends(get_db),
+    _session: dict = Depends(require_workspace_access),
 ):
     result = await db.execute(
         select(Grupo).where(Grupo.id == grupo_id, Grupo.workspace_id == workspace_id)
@@ -61,7 +78,12 @@ async def update_grupo(
 
 
 @router.delete("/{grupo_id}", status_code=204)
-async def delete_grupo(workspace_id: int, grupo_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_grupo(
+    workspace_id: int,
+    grupo_id: int,
+    db: AsyncSession = Depends(get_db),
+    _session: dict = Depends(require_workspace_access),
+):
     result = await db.execute(
         select(Grupo).where(Grupo.id == grupo_id, Grupo.workspace_id == workspace_id)
     )

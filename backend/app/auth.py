@@ -2,7 +2,7 @@ import hashlib
 import os
 from datetime import datetime, timezone
 
-from fastapi import Cookie, Depends, HTTPException, Response
+from fastapi import Cookie, Depends, Header, HTTPException, Response
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,11 +27,10 @@ class LoginRequest(BaseModel):
 
 
 # ------------------------------------------------------------------
-# Valida token e retorna os dados do api_token
+# Validação interna do token
 # ------------------------------------------------------------------
 async def _validate_token(token: str, db: AsyncSession) -> dict:
     token_hash = _hash_token(token)
-
     result = await db.execute(
         text("""
             SELECT t.id, t.workspace_id, t.descricao, t.expires_at,
@@ -45,33 +44,68 @@ async def _validate_token(token: str, db: AsyncSession) -> dict:
     )
     row = result.mappings().first()
     if not row:
-        raise HTTPException(status_code=401, detail="Token inválido ou expirado")
+        raise HTTPException(
+            status_code=401,
+            detail="Token inválido ou expirado",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     return dict(row)
 
 
 # ------------------------------------------------------------------
-# Dependency: lê o cookie httpOnly e valida
+# Dependency principal — aceita cookie httpOnly OU Bearer token
+# Usado por TODOS os endpoints protegidos
 # ------------------------------------------------------------------
 async def require_session(
     ansiventory_session: str | None = Cookie(default=None),
+    authorization: str | None = Header(default=None),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    if not ansiventory_session:
+    token = None
+
+    # 1. tenta cookie (UI)
+    if ansiventory_session:
+        token = ansiventory_session
+
+    # 2. tenta Bearer token (API, scripts, AWX)
+    elif authorization and authorization.startswith("Bearer "):
+        token = authorization.removeprefix("Bearer ").strip()
+
+    if not token:
         raise HTTPException(
             status_code=401,
-            detail="Sessão não encontrada",
-            headers={"WWW-Authenticate": "Cookie"},
+            detail="Autenticação necessária",
+            headers={"WWW-Authenticate": "Bearer"},
         )
-    return await _validate_token(ansiventory_session, db)
+
+    return await _validate_token(token, db)
+
+
+# ------------------------------------------------------------------
+# Dependency de workspace — valida auth + pertencimento ao workspace
+# ------------------------------------------------------------------
+async def require_workspace_access(
+    workspace_id: int,
+    session: dict = Depends(require_session),
+) -> dict:
+    if session["workspace_id"] != workspace_id:
+        raise HTTPException(
+            status_code=403,
+            detail="Acesso negado a este workspace",
+        )
+    return session
 
 
 # ------------------------------------------------------------------
 # Endpoint de login — seta o cookie httpOnly
 # ------------------------------------------------------------------
-async def login(payload: LoginRequest, response: Response, db: AsyncSession = Depends(get_db)) -> dict:
+async def login(
+    payload: LoginRequest,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
     token_data = await _validate_token(payload.token, db)
 
-    # garante que o token pertence ao workspace informado
     if token_data["workspace_slug"] != payload.workspace:
         raise HTTPException(status_code=401, detail="Token não pertence a este workspace")
 
@@ -93,8 +127,14 @@ async def login(payload: LoginRequest, response: Response, db: AsyncSession = De
 
 
 # ------------------------------------------------------------------
-# Endpoint de logout — limpa o cookie
+# Endpoint de logout
 # ------------------------------------------------------------------
 async def logout(response: Response) -> dict:
-    response.delete_cookie(key=SESSION_COOKIE, path="/", httponly=True, secure=IS_PROD, samesite="strict" if IS_PROD else "lax")
+    response.delete_cookie(
+        key=SESSION_COOKIE,
+        path="/",
+        httponly=True,
+        secure=IS_PROD,
+        samesite="strict" if IS_PROD else "lax",
+    )
     return {"message": "sessão encerrada"}

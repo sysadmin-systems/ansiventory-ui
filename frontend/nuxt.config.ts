@@ -1,5 +1,5 @@
 export default defineNuxtConfig({
-  devtools: { enabled: true },
+  devtools: { enabled: process.env.NODE_ENV !== 'production' },
 
   modules: [
     '@pinia/nuxt',
@@ -27,7 +27,11 @@ export default defineNuxtConfig({
   app: {
     head: {
       title: 'Ansiventory UI',
-      meta: [{ name: 'description', content: 'Inventário dinâmico Ansible' }],
+      meta: [
+        { name: 'description', content: 'Inventário dinâmico Ansible' },
+        { 'http-equiv': 'X-Content-Type-Options', content: 'nosniff' },
+        { name: 'referrer', content: 'strict-origin-when-cross-origin' },
+      ],
     },
   },
 

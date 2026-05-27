@@ -2102,7 +2102,7 @@ const _jD61PC16NSSbdRUzZEHeCjxZB6hFYlxwBVyJ8Wvvg = (function(nitro) {
 
 const rootDir = "/home/sysadmin/dev/ansiventory-ui/frontend";
 
-const appHead = {"meta":[{"name":"viewport","content":"width=device-width, initial-scale=1"},{"charset":"utf-8"},{"name":"description","content":"Inventário dinâmico Ansible"}],"link":[],"style":[],"script":[],"noscript":[],"title":"Ansiventory UI"};
+const appHead = {"meta":[{"name":"viewport","content":"width=device-width, initial-scale=1"},{"charset":"utf-8"},{"name":"description","content":"Inventário dinâmico Ansible"},{"http-equiv":"X-Content-Type-Options","content":"nosniff"},{"name":"referrer","content":"strict-origin-when-cross-origin"}],"link":[],"style":[],"script":[],"noscript":[],"title":"Ansiventory UI"};
 
 const appRootTag = "div";
 

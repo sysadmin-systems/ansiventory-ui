@@ -110,3 +110,7 @@
     @apply absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-blue rounded-full;
   }
 }
+
+/* fade transition para workspace badge */
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }

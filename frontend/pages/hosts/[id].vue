@@ -186,46 +186,30 @@ const showEditHost = ref(false)
 const showAddVar = ref(false)
 const confirmDelete = ref(false)
 
-const { data: grupos } = useAsyncData(
-  'grupos',
-  async () => {
-    if (!auth.workspaceId) return []
-    return get<Grupo[]>(`/workspaces/${auth.workspaceId}/grupos`)
-  },
-  { default: () => [] as Grupo[] }
-)
+const grupos = ref<Grupo[]>([])
+const host = ref<Host | null>(null)
+const effectiveVars = ref<HostVars | null>(null)
+const audit = ref<AuditLog[]>([])
 
-const { data: host, refresh: refreshHost } = useAsyncData(
-  `host-${hostId.value}`,
-  async () => {
-    if (!auth.workspaceId) return null
-    return get<Host>(`/workspaces/${auth.workspaceId}/hosts/${hostId.value}`)
-  }
-)
+async function loadData() {
+  if (!auth.workspaceId) return
+  const [h, g, ev, al] = await Promise.all([
+    get<Host>(`/workspaces/${auth.workspaceId}/hosts/${hostId.value}`),
+    get<Grupo[]>(`/workspaces/${auth.workspaceId}/grupos`),
+    get<HostVars>(`/workspaces/${auth.workspaceId}/hosts/${hostId.value}/vars`),
+    get<AuditLog[]>(`/workspaces/${auth.workspaceId}/hosts/${hostId.value}/audit`),
+  ])
+  host.value = h
+  grupos.value = g
+  effectiveVars.value = ev
+  audit.value = al
+}
 
-const { data: effectiveVars, refresh: refreshVars } = useAsyncData(
-  `host-vars-${hostId.value}`,
-  async () => {
-    if (!auth.workspaceId) return null
-    return get<HostVars>(`/workspaces/${auth.workspaceId}/hosts/${hostId.value}/vars`)
-  }
-)
+async function refreshHost() { if (auth.workspaceId) host.value = await get<Host>(`/workspaces/${auth.workspaceId}/hosts/${hostId.value}`) }
+async function refreshVars() { if (auth.workspaceId) effectiveVars.value = await get<HostVars>(`/workspaces/${auth.workspaceId}/hosts/${hostId.value}/vars`) }
 
-const { data: audit, refresh: refreshAudit } = useAsyncData(
-  `host-audit-${hostId.value}`,
-  async () => {
-    if (!auth.workspaceId) return null
-    return get<AuditLog[]>(`/workspaces/${auth.workspaceId}/hosts/${hostId.value}/audit`)
-  }
-)
-
-watch(() => auth.workspaceId, (id) => {
-  if (id) { refreshHost(); refreshVars(); refreshAudit() }
-}, { immediate: true })
-
-onMounted(() => {
-  if (auth.workspaceId) { refreshHost(); refreshVars(); refreshAudit() }
-})
+onMounted(() => loadData())
+watch(() => auth.workspaceId, (id) => { if (id) loadData() })
 
 const hostVarEntries = computed(() =>
   Object.entries(host.value?.vars ?? {}).map(([k, v]) => ({ key: k, value: v }))

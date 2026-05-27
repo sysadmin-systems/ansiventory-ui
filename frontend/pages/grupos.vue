@@ -231,26 +231,27 @@ const editGrupoNome = ref('')
 const newVarKey = ref('')
 const newVarValue = ref('')
 
-const { data: grupos, refresh: refreshGrupos } = useAsyncData(
-  'grupos-page',
-  async () => {
-    if (!auth.workspaceId) return [] as Grupo[]
-    return get<Grupo[]>(`/workspaces/${auth.workspaceId}/grupos`)
-  },
-  { default: () => [] as Grupo[] }
-)
+// usando ref + fetch direto para evitar cache do useAsyncData com workspaceId tardio
+const grupos = ref<Grupo[]>([])
+const allHosts = ref<Host[]>([])
 
-const { data: allHosts } = useAsyncData(
-  'hosts-for-grupos',
-  async () => {
-    if (!auth.workspaceId) return [] as Host[]
-    return get<Host[]>(`/workspaces/${auth.workspaceId}/hosts`)
-  },
-  { default: () => [] as Host[] }
-)
+async function loadData() {
+  if (!auth.workspaceId) return
+  const [g, h] = await Promise.all([
+    get<Grupo[]>(`/workspaces/${auth.workspaceId}/grupos`),
+    get<Host[]>(`/workspaces/${auth.workspaceId}/hosts`),
+  ])
+  grupos.value = g
+  allHosts.value = h
+}
 
-onMounted(() => { if (auth.workspaceId) refreshGrupos() })
-watch(() => auth.workspaceId, (id) => { if (id) refreshGrupos() }, { immediate: true })
+async function refreshGrupos() {
+  if (!auth.workspaceId) return
+  grupos.value = await get<Grupo[]>(`/workspaces/${auth.workspaceId}/grupos`)
+}
+
+onMounted(() => loadData())
+watch(() => auth.workspaceId, (id) => { if (id) loadData() })
 
 const selected = computed(() => grupos.value?.find(g => g.id === selectedId.value) ?? null)
 watch(selected, (g) => { if (g) editGrupoNome.value = g.nome })
