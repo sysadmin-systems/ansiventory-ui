@@ -23,9 +23,8 @@ spec:
       labels:
         app: ansiventory-backend
     spec:
-      # private registry
       imagePullSecrets:
-        - name: regcred
+        - name: ansiventory-secrets
       serviceAccountName: ansiventory-backend
       containers:
         - name: ansiventory-backend

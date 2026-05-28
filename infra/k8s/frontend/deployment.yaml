@@ -16,6 +16,8 @@ spec:
       labels:
         app: ansiventory-frontend
     spec:
+      imagePullSecrets:
+        - name: ansiventory-secrets
       containers:
         - name: frontend
           image: bauhaussistemas/ansiventory-frontend:latest  # ajuste para seu registry
