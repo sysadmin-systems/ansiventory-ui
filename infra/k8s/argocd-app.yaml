@@ -7,7 +7,7 @@ spec:
   project: default
 
   source:
-    repoURL: https://github.com/sysadmin-systems/ansiventory-ui
+    repoURL: git@github.com:sysadmin-systems/ansiventory-ui.git
     targetRevision: master
     path: infra/k8s
 

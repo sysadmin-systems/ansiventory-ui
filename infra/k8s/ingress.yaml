@@ -11,7 +11,7 @@ spec:
     name: letsencrypt-prod        # ajuste para o nome do seu ClusterIssuer
     kind: ClusterIssuer
   dnsNames:
-    - ansiventory.bauhaus.systems  # ajuste para seu domínio
+    - ansiventory.bauhaus.cloud  # ajuste para seu domínio
 
 ---
 # IngressRoute — frontend (UI)
@@ -24,7 +24,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`ansiventory.bauhaus.systems`)
+    - match: Host(`ansiventory.bauhaus.cloud`)
       kind: Rule
       services:
         - name: ansiventory-frontend
@@ -43,36 +43,36 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`ansiventory.bauhaus.systems`) && PathPrefix(`/api`)
+    - match: Host(`ansiventory.bauhaus.cloud`) && PathPrefix(`/api`)
       kind: Rule
       middlewares:
         - name: strip-api-prefix
       services:
         - name: ansiventory-backend
           port: 80
-    - match: Host(`ansiventory.bauhaus.systems`) && PathPrefix(`/auth`)
+    - match: Host(`ansiventory.bauhaus.cloud`) && PathPrefix(`/auth`)
       kind: Rule
       services:
         - name: ansiventory-backend
           port: 80
-    - match: Host(`ansiventory.bauhaus.systems`) && PathPrefix(`/inventory`)
+    - match: Host(`ansiventory.bauhaus.cloud`) && PathPrefix(`/inventory`)
       kind: Rule
       services:
         - name: ansiventory-backend
           port: 80
-    - match: Host(`ansiventory.bauhaus.systems`) && PathPrefix(`/workspaces`)
+    - match: Host(`ansiventory.bauhaus.cloud`) && PathPrefix(`/workspaces`)
       kind: Rule
       services:
         - name: ansiventory-backend
           port: 80
-    - match: Host(`ansiventory.bauhaus.systems`) && PathPrefix(`/vault`)
+    - match: Host(`ansiventory.bauhaus.cloud`) && PathPrefix(`/vault`)
       kind: Rule
       services:
         - name: ansiventory-backend
           port: 80
   tls:
     secretName: ansiventory-tls-secret
-
+    
 ---
 # Middleware para remover o prefixo /api antes de passar pro backend
 apiVersion: traefik.io/v1alpha1

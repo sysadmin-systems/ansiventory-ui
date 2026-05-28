@@ -23,10 +23,13 @@ spec:
       labels:
         app: ansiventory-backend
     spec:
+      # private registry
+      imagePullSecrets:
+        - name: regcred
       serviceAccountName: ansiventory-backend
       containers:
-        - name: backend
-          image: bauhaussistemas/ansiventory-backend:latest  # ajuste para seu registry
+        - name: ansiventory-backend
+          image: bauhaussistemas/ansiventory-ui-backend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
