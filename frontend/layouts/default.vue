@@ -20,14 +20,11 @@
 
       <!-- workspace badge -->
       <div class="px-4 py-3 border-b border-border flex-shrink-0">
-        <Transition name="fade">
-          <div v-if="auth.workspace" class="flex items-center gap-2 bg-bg-2 rounded-lg px-3 py-2 border border-border">
-            <i class="ti ti-layers-intersect text-[11px] text-blue-text flex-shrink-0" />
-            <span class="text-[11px] font-mono text-text-2 truncate">{{ auth.workspace }}</span>
-            <div class="ml-auto w-1.5 h-1.5 rounded-full bg-green flex-shrink-0" />
-          </div>
-          <div v-else class="h-[34px]" />
-        </Transition>
+        <div class="flex items-center gap-2 bg-bg-2 rounded-lg px-3 py-2 border border-border">
+          <i class="ti ti-layers-intersect text-[11px] text-blue-text flex-shrink-0" />
+          <span class="text-[11px] font-mono text-text-2 truncate">{{ auth.workspace }}</span>
+          <div class="ml-auto w-1.5 h-1.5 rounded-full bg-green flex-shrink-0" />
+        </div>
       </div>
 
       <!-- navigation -->

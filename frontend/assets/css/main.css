@@ -114,3 +114,7 @@
 /* fade transition para workspace badge */
 .fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
+
+/* overlay de verificação de auth */
+.auth-check-leave-active { transition: opacity 0.15s ease; }
+.auth-check-leave-to { opacity: 0; }

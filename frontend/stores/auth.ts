@@ -9,6 +9,8 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     session: null as Session | null,
     loading: false,
+    checking: true,
+    initialized: false,
     error: null as string | null,
   }),
 
@@ -35,11 +37,19 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async fetchMe() {
+      // Pula se já foi verificado — o estado SSR é hidratado no cliente,
+      // evitando uma chamada desnecessária em cada navegação SPA.
+      if (this.initialized) return
+
       const { get } = useApi()
+      this.checking = true
       try {
         this.session = await get<Session>('/auth/me')
       } catch {
         this.session = null
+      } finally {
+        this.checking = false
+        this.initialized = true
       }
     },
 

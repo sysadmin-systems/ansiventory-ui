@@ -35,5 +35,9 @@ export default defineNuxtConfig({
     },
   },
 
+  routeRules: {
+    '/': { redirect: '/hosts' },
+  },
+
   compatibilityDate: '2024-11-01',
 })

@@ -1,6 +1,5 @@
-export default defineNuxtPlugin(async () => {
-    const auth = useAuthStore()
-    if (!auth.isAuthenticated) {
-      await auth.fetchMe()
-    }
-  })
+// plugin mantido para inicializar o store no cliente
+// o fetchMe é feito pelo middleware auth.ts
+export default defineNuxtPlugin(() => {
+  // store inicializado automaticamente pelo pinia
+})
