@@ -38,7 +38,10 @@ spec:
             - name: FRONTEND_URL
               value: "https://ansiventory.bauhaus.cloud"
             - name: POSTGRES_HOST
-              value: "bauhaus-ha-primary.postgres-operator.svc"
+              valueFrom:
+                secretKeyRef:
+                  name: ansiventory-secrets
+                  key: POSTGRES_HOST
             - name: POSTGRES_PORT
               value: "5432"
             - name: POSTGRES_DB
