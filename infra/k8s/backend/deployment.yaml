@@ -35,6 +35,8 @@ spec:
           env:
             - name: ENVIRONMENT
               value: "production"
+            - name: FRONTEND_URL
+              value: "https://ansiventory.bauhaus.cloud"
             - name: POSTGRES_HOST
               value: "ansiventory-db-rw.ansiventory.svc.cluster.local"
             - name: POSTGRES_PORT

@@ -17,6 +17,13 @@ spec:
     server: https://kubernetes.default.svc
     namespace: ansiventory
 
+  ignoreDifferences:
+    - group: external-secrets.io
+      kind: ExternalSecret
+      jsonPointers:
+        - /metadata/annotations/force-sync
+        - /metadata/finalizers
+
   syncPolicy:
     automated:
       prune: true
@@ -24,3 +31,4 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
+      - RespectIgnoreDifferences=true
