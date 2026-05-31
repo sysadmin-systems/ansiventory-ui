@@ -9,6 +9,10 @@ __pycache__/
 *.pyc
 .venv/
 
+# Nuxt generated
+.nuxt/
+.output/
+
 # Build
 dist/
 build/
