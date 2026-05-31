@@ -30,6 +30,7 @@ O Ansiventory substitui esses arquivos por um banco PostgreSQL acessível de qua
 - Docker + Docker Compose
 - Node.js 20+
 - Python 3.12+
+- ansible-core (para ansible-vault)
 
 ### Subir o ambiente
 
@@ -86,14 +87,14 @@ Se você já tem um inventário Ansible (`hosts.yml` + `host_vars/`), use o scri
 pip install pyyaml requests
 
 # dry-run primeiro
-python3 sql/migrate_inventory.py \
+python3 migrate_inventory.py \
   --inventory /caminho/para/inventory \
   --api http://localhost:8000 \
   --workspace 1 \
   --dry-run
 
 # migração real
-ANSIVENTORY_TOKEN=seu-token python3 sql/migrate_inventory.py \
+ANSIVENTORY_TOKEN=seu-token python3 migrate_inventory.py \
   --inventory /caminho/para/inventory \
   --api http://localhost:8000 \
   --workspace 1
@@ -209,14 +210,23 @@ ansiventory-ui/
 │   │   ├── config.py
 │   │   ├── database.py
 │   │   ├── models/
-│   │   ├── routers/
-│   │   │   ├── hosts.py
-│   │   │   ├── grupos.py
-│   │   │   ├── inventory.py
-│   │   │   ├── vault.py
-│   │   │   └── tokens.py
-│   │   └── schemas/
-│   └── Dockerfile
+|   │   ├── routers/
+|   │   │   ├── __init__.py
+|   │   │   ├── hosts.py
+|   │   │   ├── grupos.py
+|   │   │   ├── inventory.py
+|   │   │   ├── vault.py
+|   │   │   └── tokens.py
+|   │   └── schemas/
+|   │       ├── __init__.py
+|   │       └── schemas.py
+|   ├── Dockerfile
+|   └── requirements.txt
+├── docker/
+|   ├── postgres/
+|   |   ├── init/
+|   |   └── conf/
+|   └── compose.yml
 ├── frontend/                 # Nuxt 3
 │   ├── pages/
 │   │   ├── login.vue
@@ -237,10 +247,12 @@ ansiventory-ui/
 │       ├── backend/
 │       ├── frontend/
 │       └── database/
-├── sql/
-│   ├── ansiventory_schema.sql
-│   └── migrate_inventory.py
-└── docker-compose.yml
+├── docker-compose.yml
+├── .env.example
+├── pyproject.toml
+├── migrate_inventory.py
+├── setup_structure.sh
+└── README.md
 ```
 
 ---

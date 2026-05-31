@@ -1,9 +1,9 @@
 [project]
 name = "ansiventory-ui"
 version = "0.1.0"
-description = "Add your description here"
+description = "Inventário dinâmico Ansible com backend PostgreSQL e interface web"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "asyncpg==0.30.0",
     "fastapi==0.115.0",
