@@ -11,7 +11,7 @@ from app.database import get_db
 
 SESSION_COOKIE = "ansiventory_session"
 COOKIE_MAX_AGE = 60 * 60 * 8  # 8 horas
-IS_PROD = os.getenv("ENVIRONMENT", "development") == "production"
+IS_PROD = os.getenv("APP_ENV", "development") == "production"
 
 
 def _hash_token(token: str) -> str:

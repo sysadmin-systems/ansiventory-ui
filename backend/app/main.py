@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.auth import LoginRequest, login, logout, require_session
 from app.routers import grupos, hosts, inventory, vault, tokens
 
-IS_PROD = os.getenv("ENVIRONMENT", "development") == "production"
+IS_PROD = os.getenv("APP_ENV", "development") == "production"
 
 # desabilita /docs e /redoc em produção
 docs_url = None if IS_PROD else "/docs"
@@ -53,8 +53,29 @@ async def security_headers(request: Request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["X-XSS-Protection"] = "0"  # desabilita legacy IE; CSP cobre
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+        "font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; "
+        "img-src 'self' data: blob:; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'"
+    ).strip()
     if IS_PROD:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+            "font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; "
+            "img-src 'self' data: blob:; "
+            "connect-src 'self'; "
+            "frame-ancestors 'none'; "
+            "base-uri 'self'"
+        ).strip()
     return response
 
 
