@@ -28,7 +28,7 @@ spec:
       serviceAccountName: ansiventory-backend
       containers:
         - name: ansiventory-backend
-          image: bauhaussistemas/ansiventory-ui-backend:1.0
+          image: bauhaussistemas/ansiventory-ui-backend:1.1
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
