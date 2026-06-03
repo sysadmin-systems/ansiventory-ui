@@ -92,10 +92,11 @@ async def delete_token(
     if not token:
         raise HTTPException(status_code=404, detail="Token não encontrado")
 
+    from sqlalchemy import func as sa_func
     count_result = await db.execute(
-        select(ApiToken).where(ApiToken.workspace_id == workspace_id)
+        select(sa_func.count(ApiToken.id)).where(ApiToken.workspace_id == workspace_id)
     )
-    total = len(count_result.scalars().all())
+    total = count_result.scalar()
     if total <= 1:
         raise HTTPException(
             status_code=400,
