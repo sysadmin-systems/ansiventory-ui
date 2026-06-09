@@ -64,6 +64,10 @@ async def get_inventory(
             {"host_id": host.id}
         )
         hostvars = vars_result.scalar() or {}
+        if host.municipio:
+            hostvars["municipio"] = host.municipio
+        if host.ambiente:
+            hostvars["ambiente"] = host.ambiente
         if "ansible_host" not in hostvars:
             hostvars["ansible_host"] = str(host.ip_address) if host.ip_address else host.hostname
         inventory["_meta"]["hostvars"][host.hostname] = hostvars
