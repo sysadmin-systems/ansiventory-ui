@@ -73,17 +73,32 @@
           </button>
         </header>
 
-        <!-- hosts members -->
-        <div class="px-6 py-2.5 border-b border-border bg-bg-0 flex items-center gap-2 flex-wrap flex-shrink-0 min-h-[44px]">
-          <span class="text-[11px] font-medium text-text-3 flex-shrink-0">
-            <i class="ti ti-server text-[11px] mr-1" />hosts:
-          </span>
-          <span
-            v-for="h in membros" :key="h.id"
-            class="tag font-mono cursor-pointer"
-            @click="navigateTo(`/hosts/${h.id}`)"
-          >{{ h.hostname }}</span>
-          <span v-if="membros.length === 0" class="text-[11px] text-text-3 italic">nenhum host neste grupo</span>
+        <!-- hosts members (recolhível) -->
+        <div class="border-b border-border bg-bg-0 flex-shrink-0">
+          <!-- cabeçalho clicável -->
+          <button
+            class="w-full flex items-center gap-2 px-6 py-2.5 hover:bg-bg-1 transition-colors text-left"
+            @click="hostsExpanded = !hostsExpanded"
+          >
+            <i class="ti ti-server text-[11px] text-text-3 flex-shrink-0" />
+            <span class="text-[11px] font-medium text-text-3">
+              hosts
+              <span class="ml-1 text-text-2 font-semibold">{{ membros.length }}</span>
+            </span>
+            <i
+              class="ti text-[11px] text-text-3 ml-auto transition-transform duration-200"
+              :class="hostsExpanded ? 'ti-chevron-up' : 'ti-chevron-down'"
+            />
+          </button>
+          <!-- lista expansível -->
+          <div v-if="hostsExpanded" class="px-6 pb-2.5 flex gap-1.5 flex-wrap">
+            <span
+              v-for="h in membros" :key="h.id"
+              class="tag font-mono cursor-pointer"
+              @click="navigateTo(`/hosts/${h.id}`)"
+            >{{ h.hostname }}</span>
+            <span v-if="membros.length === 0" class="text-[11px] text-text-3 italic">nenhum host neste grupo</span>
+          </div>
         </div>
 
         <!-- vars area -->
@@ -220,6 +235,7 @@ const auth = useAuthStore()
 const { get, post, patch, del } = useApi()
 
 const selectedId = ref<number | null>(null)
+const hostsExpanded = ref(false)
 const showNewGrupo = ref(false)
 const showEditGrupo = ref(false)
 const showAddVar = ref(false)
@@ -254,7 +270,10 @@ onMounted(() => loadData())
 watch(() => auth.workspaceId, (id) => { if (id) loadData() })
 
 const selected = computed(() => grupos.value?.find(g => g.id === selectedId.value) ?? null)
-watch(selected, (g) => { if (g) editGrupoNome.value = g.nome })
+watch(selected, (g) => {
+  if (g) editGrupoNome.value = g.nome
+  hostsExpanded.value = false  // recolhe ao trocar de grupo
+})
 
 const membros = computed(() =>
   (allHosts.value ?? []).filter(h => h.grupos.includes(selected.value?.nome ?? ''))

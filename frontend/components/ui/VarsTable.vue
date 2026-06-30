@@ -3,14 +3,40 @@
     <table class="w-full text-xs">
       <thead>
         <tr class="bg-bg-2 border-b border-border">
-          <th class="text-left px-3 py-2 text-[10px] text-text-3 font-medium tracking-wide w-1/3">chave</th>
-          <th class="text-left px-3 py-2 text-[10px] text-text-3 font-medium tracking-wide">valor</th>
+          <th
+            class="text-left px-3 py-2 text-[10px] font-medium tracking-wide w-1/3 cursor-pointer select-none group/th"
+            :class="sortCol === 'key' ? 'text-text-1' : 'text-text-3 hover:text-text-2'"
+            @click="toggleSort('key')"
+          >
+            <span class="flex items-center gap-1">
+              chave
+              <i class="ti text-[9px] transition-opacity"
+                :class="sortCol === 'key'
+                  ? (sortDir === 'asc' ? 'ti-arrow-up opacity-100' : 'ti-arrow-down opacity-100')
+                  : 'ti-arrows-sort opacity-0 group-hover/th:opacity-40'"
+              />
+            </span>
+          </th>
+          <th
+            class="text-left px-3 py-2 text-[10px] font-medium tracking-wide cursor-pointer select-none group/th"
+            :class="sortCol === 'value' ? 'text-text-1' : 'text-text-3 hover:text-text-2'"
+            @click="toggleSort('value')"
+          >
+            <span class="flex items-center gap-1">
+              valor
+              <i class="ti text-[9px] transition-opacity"
+                :class="sortCol === 'value'
+                  ? (sortDir === 'asc' ? 'ti-arrow-up opacity-100' : 'ti-arrow-down opacity-100')
+                  : 'ti-arrows-sort opacity-0 group-hover/th:opacity-40'"
+              />
+            </span>
+          </th>
           <th v-if="!readonly" class="w-16 px-2 py-2 text-[10px] text-text-3 font-medium text-right">ações</th>
         </tr>
       </thead>
       <tbody>
         <tr
-          v-for="entry in vars"
+          v-for="entry in sortedVars"
           :key="entry.key"
           class="border-b border-border last:border-0 group"
           :class="editingKey === entry.key ? 'bg-bg-2' : 'hover:bg-bg-2'"
@@ -117,6 +143,33 @@ const emit = defineEmits<{
 const editingKey = ref<string | null>(null)
 const editValue = ref('')
 const confirmingRemoveKey = ref<string | null>(null)
+
+const sortCol = ref<'key' | 'value'>('key')
+const sortDir = ref<'asc' | 'desc'>('asc')
+
+function toggleSort(col: 'key' | 'value') {
+  if (sortCol.value === col) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortCol.value = col
+    sortDir.value = 'asc'
+  }
+}
+
+function sortStr(v: unknown): string {
+  if (v === null || v === undefined) return ''
+  if (typeof v === 'object') return JSON.stringify(v)
+  return String(v)
+}
+
+const sortedVars = computed(() => {
+  return [...props.vars].sort((a, b) => {
+    const va = sortCol.value === 'key' ? a.key : sortStr(a.value)
+    const vb = sortCol.value === 'key' ? b.key : sortStr(b.value)
+    const cmp = va.localeCompare(vb, undefined, { sensitivity: 'base', numeric: true })
+    return sortDir.value === 'asc' ? cmp : -cmp
+  })
+})
 
 function isVault(v: unknown): boolean {
   if (typeof v === 'object' && v !== null && '__ansible_vault' in v) return true

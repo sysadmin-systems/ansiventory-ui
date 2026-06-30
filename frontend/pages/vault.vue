@@ -61,11 +61,21 @@
 
             <div v-if="enc.output">
               <label class="text-xs font-semibold text-text-2 block mb-2 uppercase tracking-wide">Resultado</label>
-              <div class="bg-bg-0 border border-border rounded-lg p-3 font-mono text-[11px] text-amber-text break-all leading-relaxed min-h-[60px]">{{ enc.output }}</div>
-              <button class="btn w-full justify-center mt-2 gap-2 text-sm" @click="copy(enc.output, 'enc')">
-                <i class="ti ti-copy text-sm" />
-                {{ copied === 'enc' ? 'Copiado!' : 'Copiar resultado' }}
-              </button>
+              <div class="bg-bg-0 border border-border rounded-lg p-3 font-mono text-[11px] text-amber-text break-all leading-relaxed min-h-[60px] whitespace-pre-wrap">{{ enc.output }}</div>
+              <div class="flex flex-col gap-2 mt-2">
+                <button class="btn w-full justify-center gap-2 text-sm" @click="copy(enc.output, 'enc')">
+                  <i class="ti ti-copy text-sm" />
+                  {{ copied === 'enc' ? 'Copiado!' : 'Copiar resultado' }}
+                </button>
+                <button class="btn w-full justify-center gap-2 text-sm border-amber/30 text-amber-text hover:bg-amber/10" @click="copyVaultJson(enc.output)">
+                  <i class="ti ti-braces text-sm" />
+                  {{ copied === 'enc-json' ? 'Copiado!' : 'Copiar como __ansible_vault' }}
+                </button>
+              </div>
+              <div class="mt-3 bg-bg-0 border border-amber/20 rounded-lg p-3">
+                <div class="text-[10px] font-semibold text-text-3 uppercase tracking-wide mb-1.5">Prévia — pronto para colar no campo vars</div>
+                <div class="font-mono text-[10px] text-text-2 break-all leading-relaxed">{{ vaultJsonPreview(enc.output) }}</div>
+              </div>
             </div>
           </div>
         </div>
@@ -133,7 +143,7 @@ const enc = reactive({ input: '', vaultId: 'default', password: '', output: '', 
 const dec = reactive({ input: '', password: '', output: null as string | null, error: '' })
 const showEncPassword = ref(false)
 const showDecPassword = ref(false)
-const copied = ref<'enc' | 'dec' | null>(null)
+const copied = ref<'enc' | 'dec' | 'enc-json' | null>(null)
 
 async function encrypt() {
   enc.error = ''
@@ -167,6 +177,23 @@ async function decrypt() {
 async function copy(text: string, which: 'enc' | 'dec') {
   await navigator.clipboard.writeText(text)
   copied.value = which
+  setTimeout(() => (copied.value = null), 2000)
+}
+
+// Converte o output do vault (com quebras de linha reais) para o formato
+// __ansible_vault que o campo vars dos cadastros espera.
+function toVaultJson(vaultStr: string): string {
+  const escaped = vaultStr.replace(/\r?\n/g, '\\n')
+  return JSON.stringify({ __ansible_vault: escaped }, null, 2)
+}
+
+function vaultJsonPreview(vaultStr: string): string {
+  return toVaultJson(vaultStr)
+}
+
+async function copyVaultJson(vaultStr: string) {
+  await navigator.clipboard.writeText(toVaultJson(vaultStr))
+  copied.value = 'enc-json'
   setTimeout(() => (copied.value = null), 2000)
 }
 </script>
