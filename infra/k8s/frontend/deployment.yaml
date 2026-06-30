@@ -20,7 +20,7 @@ spec:
         - name: ansiventory-secrets
       containers:
         - name: frontend
-          image: bauhaussistemas/ansiventory-ui-frontend:1.1
+          image: bauhaussistemas/ansiventory-ui-frontend:1.3
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
