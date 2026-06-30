@@ -180,11 +180,11 @@ async function copy(text: string, which: 'enc' | 'dec') {
   setTimeout(() => (copied.value = null), 2000)
 }
 
-// Converte o output do vault (com quebras de linha reais) para o formato
-// __ansible_vault que o campo vars dos cadastros espera.
+// Converte o output do vault para o formato __ansible_vault que o campo vars espera.
+// JSON.stringify já converte quebras reais em \n no JSON — sem replace manual,
+// que causaria \\n duplo e quebraria a decifragem no Ansible.
 function toVaultJson(vaultStr: string): string {
-  const escaped = vaultStr.replace(/\r?\n/g, '\\n')
-  return JSON.stringify({ __ansible_vault: escaped }, null, 2)
+  return JSON.stringify({ __ansible_vault: vaultStr.replace(/\r\n/g, '\n') }, null, 2)
 }
 
 function vaultJsonPreview(vaultStr: string): string {
