@@ -125,7 +125,7 @@
                 >
                   <i class="ti ti-pencil text-xs" />
                 </button>
-                <!-- só mostra lixeira para vars do host (não vars de grupo sem override) -->
+                <!-- lixeira: só para vars do host (não vars de grupo sem override) -->
                 <template v-if="entry.source !== 'group' && confirmingRemoveKey !== entry.key">
                   <button
                     class="w-6 h-6 rounded flex items-center justify-center text-text-3 hover:text-red-text hover:bg-red-bg transition-colors"
@@ -135,8 +135,8 @@
                     <i class="ti ti-trash text-xs" />
                   </button>
                 </template>
-                <!-- estado confirmação: confirmar/cancelar -->
-                <template v-else>
+                <!-- confirmação de exclusão: só quando o usuário clicou na lixeira -->
+                <template v-if="confirmingRemoveKey === entry.key">
                   <button
                     class="w-6 h-6 rounded flex items-center justify-center text-green-text hover:bg-green-bg transition-colors"
                     title="confirmar exclusão"
