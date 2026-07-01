@@ -77,9 +77,17 @@ class HostOut(BaseModel):
     grupos: list[str] = []
 
 
+class VarDetail(BaseModel):
+    value: Any
+    source: str           # "host" | "group"
+    group: Optional[str] = None      # nome do grupo de origem
+    overrides: Optional[str] = None  # nome do grupo que está sendo sobrescrito
+
+
 class HostVarsOut(BaseModel):
     hostname: str
     vars_final: dict[str, Any]
+    vars_detail: dict[str, VarDetail] = {}
 
 
 # ------------------------------------------------------------------

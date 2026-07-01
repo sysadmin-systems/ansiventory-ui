@@ -26,9 +26,17 @@ export interface Grupo {
   updated_at: string
 }
 
+export interface VarDetail {
+  value: unknown
+  source: 'host' | 'group'
+  group?: string      // grupo de origem (quando source = 'group')
+  overrides?: string  // grupo que está sendo sobrescrito (quando source = 'host')
+}
+
 export interface HostVars {
   hostname: string
   vars_final: Record<string, unknown>
+  vars_detail: Record<string, VarDetail>
 }
 
 export interface AuditLog {

@@ -1,4 +1,20 @@
 <template>
+  <div class="flex flex-col gap-3">
+
+  <!-- filtro -->
+  <div class="bg-bg-2 border border-border rounded-lg flex items-center px-3 gap-2 h-9 focus-within:border-blue/50 focus-within:ring-2 focus-within:ring-blue/10 transition-all">
+    <i class="ti ti-search text-text-3 text-sm flex-shrink-0" />
+    <input
+      v-model="filterText"
+      type="text"
+      placeholder="filtrar variável..."
+      class="bg-transparent text-sm text-text-1 placeholder-text-3 outline-none w-full font-mono"
+    />
+    <button v-if="filterText" class="text-text-3 hover:text-text-1 transition-colors flex-shrink-0" @click="filterText = ''">
+      <i class="ti ti-x text-xs" />
+    </button>
+  </div>
+
   <div class="border border-border rounded-lg overflow-hidden">
     <table class="w-full text-xs">
       <thead>
@@ -41,7 +57,29 @@
           class="border-b border-border last:border-0 group"
           :class="editingKey === entry.key ? 'bg-bg-2' : 'hover:bg-bg-2'"
         >
-          <td class="px-3 py-2 font-mono text-text-2 align-top">{{ entry.key }}</td>
+          <td class="px-3 py-2 font-mono text-text-2 align-top">
+            <div class="flex items-start gap-1.5 flex-wrap">
+              <span>{{ entry.key }}</span>
+              <!-- badge de origem -->
+              <span
+                v-if="entry.source === 'group'"
+                class="inline-flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded-full border flex-shrink-0 mt-px"
+                :class="entry.overrides
+                  ? 'bg-amber/10 text-amber-text border-amber/30'
+                  : 'bg-bg-3 text-text-3 border-border'"
+                :title="entry.overrides ? `sobreescrito pelo host` : `grupo: ${entry.group}`"
+              >
+                <i class="ti ti-sitemap text-[8px]" />{{ entry.group }}
+              </span>
+              <span
+                v-else-if="entry.source === 'host' && entry.overrides"
+                class="inline-flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-blue/10 text-blue-text border border-blue/20 flex-shrink-0 mt-px"
+                :title="`override do grupo ${entry.overrides}`"
+              >
+                <i class="ti ti-server text-[8px]" />override
+              </span>
+            </div>
+          </td>
 
           <!-- modo edição -->
           <td v-if="editingKey === entry.key" class="px-3 py-1.5 align-top" colspan="2">
@@ -87,11 +125,11 @@
                 >
                   <i class="ti ti-pencil text-xs" />
                 </button>
-                <!-- estado normal: lixeira -->
-                <template v-if="confirmingRemoveKey !== entry.key">
+                <!-- só mostra lixeira para vars do host (não vars de grupo sem override) -->
+                <template v-if="entry.source !== 'group' && confirmingRemoveKey !== entry.key">
                   <button
                     class="w-6 h-6 rounded flex items-center justify-center text-text-3 hover:text-red-text hover:bg-red-bg transition-colors"
-                    title="remover"
+                    :title="entry.overrides ? `remover override (reverterá para valor do grupo ${entry.overrides})` : 'remover'"
                     @click="confirmingRemoveKey = entry.key"
                   >
                     <i class="ti ti-trash text-xs" />
@@ -119,19 +157,26 @@
           </template>
         </tr>
 
-        <tr v-if="vars.length === 0">
+        <tr v-if="sortedVars.length === 0">
           <td :colspan="readonly ? 2 : 3" class="px-3 py-6 text-center text-text-3">
-            nenhuma variável
+            {{ filterText ? 'nenhuma variável encontrada' : 'nenhuma variável' }}
           </td>
         </tr>
       </tbody>
     </table>
   </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 const props = defineProps<{
-  vars: { key: string; value: unknown }[]
+  vars: {
+    key: string
+    value: unknown
+    source?: 'host' | 'group'  // undefined = sem info de origem (tabs host/grupo)
+    group?: string
+    overrides?: string
+  }[]
   readonly?: boolean
 }>()
 
@@ -143,6 +188,7 @@ const emit = defineEmits<{
 const editingKey = ref<string | null>(null)
 const editValue = ref('')
 const confirmingRemoveKey = ref<string | null>(null)
+const filterText = ref('')
 
 const sortCol = ref<'key' | 'value'>('key')
 const sortDir = ref<'asc' | 'desc'>('asc')
@@ -163,7 +209,16 @@ function sortStr(v: unknown): string {
 }
 
 const sortedVars = computed(() => {
-  return [...props.vars].sort((a, b) => {
+  const f = filterText.value.trim().toLowerCase()
+  const filtered = f
+    ? props.vars.filter(e =>
+        e.key.toLowerCase().includes(f) ||
+        sortStr(e.value).toLowerCase().includes(f) ||
+        (e.group ?? '').toLowerCase().includes(f)
+      )
+    : props.vars
+
+  return [...filtered].sort((a, b) => {
     const va = sortCol.value === 'key' ? a.key : sortStr(a.value)
     const vb = sortCol.value === 'key' ? b.key : sortStr(b.value)
     const cmp = va.localeCompare(vb, undefined, { sensitivity: 'base', numeric: true })

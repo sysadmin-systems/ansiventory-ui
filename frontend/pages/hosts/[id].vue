@@ -83,11 +83,58 @@
 
       <!-- vars efetivas -->
       <template v-if="activeTab === 'effective'">
-        <div class="mb-4">
-          <p class="text-sm font-medium text-text-1">Variáveis efetivas</p>
-          <p class="text-xs text-text-3 mt-0.5">{{ effectiveVarEntries.length }} vars (group_vars + host_vars mescladas)</p>
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <p class="text-sm font-medium text-text-1">Variáveis efetivas</p>
+            <p class="text-xs text-text-3 mt-0.5">{{ effectiveVarEntries.length }} vars — group_vars + host_vars mescladas</p>
+          </div>
+          <div class="flex items-center gap-3 text-[11px] text-text-3">
+            <span class="flex items-center gap-1">
+              <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-bg-3 border border-border text-[9px]">
+                <i class="ti ti-sitemap text-[8px]" />grupo
+              </span>
+              vem do grupo
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-blue/10 text-blue-text border border-blue/20 text-[9px]">
+                <i class="ti ti-server text-[8px]" />override
+              </span>
+              host sobrescreve grupo
+            </span>
+          </div>
         </div>
-        <UiVarsTable :vars="effectiveVarEntries" :readonly="true" />
+        <UiVarsTable :vars="effectiveVarEntries" @update="onEffectiveVarUpdate" @remove="onEffectiveVarRemove" />
+
+        <!-- modal de confirmação de override -->
+        <div v-if="overrideConfirm" class="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm" style="background:rgba(7,9,15,0.7)">
+          <div class="glass-card w-full max-w-sm">
+            <div class="p-6">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-xl bg-amber/10 border border-amber/30 flex items-center justify-center flex-shrink-0">
+                  <i class="ti ti-alert-triangle text-amber-text text-lg" />
+                </div>
+                <div>
+                  <div class="text-sm font-semibold text-text-1">Criar override no host</div>
+                  <div class="text-xs text-text-3 mt-0.5">variável de grupo</div>
+                </div>
+              </div>
+              <p class="text-sm text-text-2 mb-3">
+                A variável <span class="font-mono text-text-1">{{ overrideConfirm.key }}</span>
+                vem do grupo <span class="font-mono text-blue-text">{{ overrideConfirm.group }}</span>.
+              </p>
+              <p class="text-xs text-text-3 bg-bg-2 rounded-lg p-3 border border-border">
+                Salvar criará um override específico neste host, sem alterar o grupo.
+                O valor do grupo continuará valendo para os demais membros.
+              </p>
+            </div>
+            <div class="flex justify-end gap-2 px-6 py-4 border-t border-border">
+              <button class="btn" @click="overrideConfirm = null">Cancelar</button>
+              <button class="btn btn-primary gap-2" @click="confirmOverride">
+                <i class="ti ti-check text-sm" /> Criar override
+              </button>
+            </div>
+          </div>
+        </div>
       </template>
 
       <!-- audit log -->
@@ -165,7 +212,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Host, HostVars, AuditLog, Grupo } from '~/types'
+import type { Host, HostVars, AuditLog, Grupo, VarDetail } from '~/types'
 
 definePageMeta({ middleware: 'auth' })
 
@@ -185,6 +232,7 @@ const tabs = [
 const showEditHost = ref(false)
 const showAddVar = ref(false)
 const confirmDelete = ref(false)
+const overrideConfirm = ref<{ key: string; value: unknown; group: string } | null>(null)
 
 const grupos = ref<Grupo[]>([])
 const host = ref<Host | null>(null)
@@ -216,7 +264,13 @@ const hostVarEntries = computed(() =>
 )
 
 const effectiveVarEntries = computed(() =>
-  Object.entries(effectiveVars.value?.vars_final ?? {}).map(([k, v]) => ({ key: k, value: v }))
+  Object.entries(effectiveVars.value?.vars_detail ?? effectiveVars.value?.vars_final ?? {}).map(([k, detail]) => {
+    if (effectiveVars.value?.vars_detail) {
+      const d = detail as VarDetail
+      return { key: k, value: d.value, source: d.source, group: d.group, overrides: d.overrides }
+    }
+    return { key: k, value: detail as unknown }
+  })
 )
 
 function formatDate(d: string) {
@@ -236,6 +290,39 @@ async function onVarRemove(key: string) {
   delete updatedVars[key]
   await patch(`/workspaces/${auth.workspaceId}/hosts/${host.value.id}`, { vars: updatedVars })
   refreshHost()
+}
+
+async function onEffectiveVarUpdate(key: string, value: unknown) {
+  if (!host.value) return
+  const detail = effectiveVars.value?.vars_detail?.[key]
+  if (detail?.source === 'group') {
+    overrideConfirm.value = { key, value, group: detail.group ?? '' }
+    return
+  }
+  await patch(`/workspaces/${auth.workspaceId}/hosts/${host.value.id}`, {
+    vars: { ...host.value.vars, [key]: value },
+  })
+  refreshHost()
+  refreshVars()
+}
+
+async function onEffectiveVarRemove(key: string) {
+  if (!host.value) return
+  const updatedVars = { ...host.value.vars }
+  delete updatedVars[key]
+  await patch(`/workspaces/${auth.workspaceId}/hosts/${host.value.id}`, { vars: updatedVars })
+  refreshHost()
+  refreshVars()
+}
+
+async function confirmOverride() {
+  if (!overrideConfirm.value || !host.value) return
+  await patch(`/workspaces/${auth.workspaceId}/hosts/${host.value.id}`, {
+    vars: { ...host.value.vars, [overrideConfirm.value.key]: overrideConfirm.value.value },
+  })
+  overrideConfirm.value = null
+  refreshHost()
+  refreshVars()
 }
 
 function onSaved() {

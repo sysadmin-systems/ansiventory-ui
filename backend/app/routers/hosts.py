@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.auth import require_workspace_access
 from app.models.models import Host, HostGrupo, Grupo, AuditLog
-from app.schemas.schemas import HostCreate, HostOut, HostUpdate, HostVarsOut, AuditLogOut
+from app.schemas.schemas import HostCreate, HostOut, HostUpdate, HostVarsOut, VarDetail, AuditLogOut
 
 router = APIRouter(prefix="/workspaces/{workspace_id}/hosts", tags=["hosts"])
 
@@ -87,16 +87,35 @@ async def get_host_vars(
     _session: dict = Depends(require_workspace_access),
 ):
     result = await db.execute(
-        select(Host.hostname)
+        select(Host)
         .where(Host.id == host_id, Host.workspace_id == workspace_id)
+        .options(selectinload(Host.host_grupos).selectinload(HostGrupo.grupo))
     )
-    hostname = result.scalar_one_or_none()
-    if not hostname:
+    host = result.scalar_one_or_none()
+    if not host:
         raise HTTPException(status_code=404, detail="Host não encontrado")
 
-    vars_result = await db.execute(text("SELECT fn_hostvars(:host_id)"), {"host_id": host_id})
-    vars_final = vars_result.scalar()
-    return HostVarsOut(hostname=hostname, vars_final=vars_final or {})
+    # Reconstrói o merge com rastreamento de origem, replicando a ordem do fn_hostvars:
+    # 1. grupo 'all' → 2. demais grupos → 3. vars do host (maior precedência)
+    vars_detail: dict[str, VarDetail] = {}
+
+    for hg in host.host_grupos:
+        if hg.grupo and hg.grupo.nome == 'all':
+            for k, v in (hg.grupo.vars or {}).items():
+                vars_detail[k] = VarDetail(value=v, source="group", group="all")
+
+    for hg in host.host_grupos:
+        if hg.grupo and hg.grupo.nome != 'all':
+            for k, v in (hg.grupo.vars or {}).items():
+                vars_detail[k] = VarDetail(value=v, source="group", group=hg.grupo.nome)
+
+    for k, v in (host.vars or {}).items():
+        overrides = vars_detail[k].group if k in vars_detail else None
+        vars_detail[k] = VarDetail(value=v, source="host", overrides=overrides)
+
+    vars_final = {k: d.value for k, d in vars_detail.items()}
+
+    return HostVarsOut(hostname=host.hostname, vars_final=vars_final, vars_detail=vars_detail)
 
 
 @router.post("", response_model=HostOut, status_code=201)
